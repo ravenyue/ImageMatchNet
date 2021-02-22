@@ -6,20 +6,18 @@ namespace ImageMatchNet
 {
     public static class SignatureComparison
     {
-        public static double NormalizedDistance
-        (
-            this ReadOnlySpan<int> left,
-            ReadOnlySpan<int> right
-        )
-        {
-            var subtractedVectors = right.Subtract(left);
+        public const double Default_Match_Threshold = 0.4;
 
-            var subtractedLength = subtractedVectors.EuclideanLength();
+        public static double NormalizedDistance(ReadOnlySpan<int> left, ReadOnlySpan<int> right)
+        {
+            ReadOnlySpan<int> subtractedVectors = right.Subtract(left);
+
+            double subtractedLength = subtractedVectors.EuclideanLength();
 
             double leftLength = left.EuclideanLength();
             double rightLength = right.EuclideanLength();
 
-            var combinedLength = leftLength + rightLength;
+            double combinedLength = leftLength + rightLength;
 
             if (combinedLength == 0.0)
             {
@@ -29,7 +27,12 @@ namespace ImageMatchNet
             return subtractedLength / combinedLength;
         }
 
-        public static double EuclideanLength(this ReadOnlySpan<int> signature)
+        public static bool IsMatch(ReadOnlySpan<int> left, ReadOnlySpan<int> right)
+        {
+            return NormalizedDistance(left, right) < Default_Match_Threshold;
+        }
+
+        private static double EuclideanLength(this ReadOnlySpan<int> signature)
         {
             var sum = 0.0;
             foreach (var val in signature)
@@ -40,28 +43,17 @@ namespace ImageMatchNet
             return Math.Sqrt(sum);
         }
 
-        public static double EuclideanLength(this ReadOnlySpan<sbyte> signature)
-        {
-            var sum = 0.0;
-            foreach (var val in signature)
-            {
-                sum += Math.Pow(val, 2);
-            }
-
-            return Math.Sqrt(sum);
-        }
-
-        public static ReadOnlySpan<sbyte> Subtract
+        private static ReadOnlySpan<int> Subtract
         (
             this ReadOnlySpan<int> left,
             ReadOnlySpan<int> right
         )
         {
-            Span<sbyte> result = new sbyte[left.Length];
+            var result = new int[left.Length];
 
             for (var i = 0; i < left.Length; ++i)
             {
-                var leftValue = (sbyte)left[i];
+                var leftValue = left[i];
 
                 if (i >= right.Length)
                 {
@@ -69,9 +61,9 @@ namespace ImageMatchNet
                     continue;
                 }
 
-                var rightValue = (sbyte)right[i];
+                var rightValue = right[i];
 
-                result[i] = (sbyte)(leftValue - rightValue);
+                result[i] = (leftValue - rightValue);
             }
 
             return result;
