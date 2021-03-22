@@ -6,7 +6,7 @@ namespace ImageMatchNet
 {
     public static class SignatureComparison
     {
-        public const double Default_Match_Threshold = 0.4;
+        public const double DefaultMatchThreshold = 0.4;
 
         public static double NormalizedDistance(ReadOnlySpan<int> left, ReadOnlySpan<int> right)
         {
@@ -29,7 +29,7 @@ namespace ImageMatchNet
 
         public static bool IsMatch(ReadOnlySpan<int> left, ReadOnlySpan<int> right)
         {
-            return NormalizedDistance(left, right) < Default_Match_Threshold;
+            return NormalizedDistance(left, right) < DefaultMatchThreshold;
         }
 
         private static double EuclideanLength(this ReadOnlySpan<int> signature)

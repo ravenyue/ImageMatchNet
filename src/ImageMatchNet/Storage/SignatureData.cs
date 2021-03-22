@@ -6,7 +6,7 @@ namespace ImageMatchNet.Storage
 {
     public class SignatureData
     {
-        public string Path { get; set; }
+        public string Key { get; set; }
 
         public int[] Signature { get; set; }
 

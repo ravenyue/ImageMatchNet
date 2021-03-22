@@ -10,12 +10,14 @@ using System.Threading.Tasks;
 
 namespace ImageMatchNet.Elasticsearch
 {
-    public class SignatureDatabaseES : SignatureDatabase
+    public class ElasticsearchSignatureStorage : SignatureStorageBase
     {
+        public const string DefaultIndex = "images";
+
         private readonly ElasticClient _client;
         private readonly string _index;
 
-        public SignatureDatabaseES(string esUri, string index = "images")
+        public ElasticsearchSignatureStorage(string esUri, string index = DefaultIndex)
         {
             var settings = new ConnectionSettings(new Uri(esUri));
             settings.DefaultIndex(index);
@@ -24,7 +26,7 @@ namespace ImageMatchNet.Elasticsearch
             _index = index;
         }
 
-        public SignatureDatabaseES(ElasticClient client, string index = "images")
+        public ElasticsearchSignatureStorage(ElasticClient client, string index = DefaultIndex)
         {
             _client = client;
             _index = index;
@@ -49,22 +51,11 @@ namespace ImageMatchNet.Elasticsearch
                 Query = MakeTermQuerys(data)
             };
 
-            var json = _client.SourceSerializer.SerializeToString(request);
+            //var json = _client.SourceSerializer.SerializeToString(request);
 
             var res = _client.Search<SignatureData>(request);
 
-            var records = new List<MatchedRecord>(res.Hits.Count);
-
-            foreach (var signData in res.Hits.Select(h => h.Source))
-            {
-                records.Add(new MatchedRecord
-                {
-                    Dist = SignatureComparison.NormalizedDistance(data.Signature, signData.Signature),
-                    Metadata = signData.Metadata,
-                    Path = signData.Path
-                });
-            }
-            return records;
+            return BuildMatchedRecords(data.Signature, res);
         }
 
         public override async Task<List<MatchedRecord>> SearchSignatureAsync(SignatureData data)
@@ -76,19 +67,48 @@ namespace ImageMatchNet.Elasticsearch
                 Query = MakeTermQuerys(data)
             };
 
-            var json = _client.SourceSerializer.SerializeToString(request);
+            //var json = _client.SourceSerializer.SerializeToString(request);
 
             var res = await _client.SearchAsync<SignatureData>(request);
 
-            var records = new List<MatchedRecord>(res.Hits.Count);
+            return BuildMatchedRecords(data.Signature, res);
+        }
 
-            foreach (var signData in res.Hits.Select(h => h.Source))
+        public override void DeleteImage(string key)
+        {
+            _client.DeleteByQuery<SignatureData>(d => d
+                .Query(q => q
+                    .Match(c => c
+                        .Field(x => x.Key)
+                        .Query(key)
+                    )
+                )
+            );
+        }
+
+        public override Task DeleteImageAsync(string key)
+        {
+            return _client.DeleteByQueryAsync<SignatureData>(d => d
+                .Query(q => q
+                    .Match(c => c
+                        .Field(x => x.Key)
+                        .Query(key)
+                    )
+                )
+            );
+        }
+
+        private List<MatchedRecord> BuildMatchedRecords(int[] sourceSignature, ISearchResponse<SignatureData> searchResponse)
+        {
+            var records = new List<MatchedRecord>(searchResponse.Hits.Count);
+
+            foreach (var signData in searchResponse.Hits.Select(h => h.Source))
             {
                 records.Add(new MatchedRecord
                 {
-                    Dist = SignatureComparison.NormalizedDistance(data.Signature, signData.Signature),
+                    Dist = Generator.NormalizedDistance(sourceSignature, signData.Signature),
                     Metadata = signData.Metadata,
-                    Path = signData.Path
+                    Key = signData.Key
                 });
             }
             return records;

@@ -39,30 +39,69 @@ namespace ImageMatchNet
         #region Overload
         public int[] GenerateSignature(Stream stream)
         {
-            return GenerateSignature(Image.Load<Rgba32>(stream));
+            return InternalGenerateSignature(Image.Load<Rgba32>(stream));
         }
 
         public int[] GenerateSignature(string filePath)
         {
-            return GenerateSignature(Image.Load<Rgba32>(filePath));
-        }
-
-        public int[] GenerateSignature(Image image)
-        {
-            return GenerateSignature(image.CloneAs<Rgba32>());
+            return InternalGenerateSignature(Image.Load<Rgba32>(filePath));
         }
         #endregion
 
-        public int[] GenerateSignature(Image<Rgba32> image)
+        public int[][] GenerateAllOrientationsSignature(string filePath)
+        {
+            using (var image = File.OpenRead(filePath))
+            {
+                return GenerateAllOrientationsSignature(image);
+            }
+        }
+
+        public int[][] GenerateAllOrientationsSignature(Stream stream)
+        {
+            var image = Image.Load<Rgba32>(stream);
+            
+            var signs = new int[4][];
+            for (int i = 0; i <= 4; i++)
+            {
+                var degrees = i * 90;
+                image.Mutate(x => x.Rotate(degrees));
+
+                if (!image.TryGetSinglePixelSpan(out Span<Rgba32> pixels))
+                {
+                    throw new InvalidOperationException("The backing buffer for the image was not contiguous.");
+                }
+
+                signs[i] = Sign(pixels, image.Width, image.Height);
+            }
+
+            return signs;
+        }
+
+        private int[] InternalGenerateSignature(Image<Rgba32> image)
         {
             // 裁剪图片
             // image.Mutate(o => o.EntropyCrop());
 
+            if (!image.TryGetSinglePixelSpan(out Span<Rgba32> pixels))
+            {
+                throw new InvalidOperationException("The backing buffer for the image was not contiguous.");
+            }
+
+            return Sign(pixels, image.Width, image.Height);
+        }
+
+        private int[] Sign(ReadOnlySpan<Rgba32> pixels, int width, int height)
+        {
+            if (width * height != pixels.Length)
+            {
+                throw new InvalidOperationException("Image size and pixels mismatch");
+            }
+
             // 计算格点坐标
-            Point[] coords = ComputeGridPoints(image.Width, image.Height, _options.GridPointNum);
+            Point[] coords = ComputeGridPoints(width, height, _options.GridPointNum);
 
             // 计算以每个网格点为中心的每个P×P方块的灰度平均值。 double[9 * 9=81] OKOK
-            double[] squareAverages = ComputeAverageBrightness(image, coords, _options.GrayCalculator, _options.UseAveragePixel);
+            double[] squareAverages = ComputeAverageBrightness(pixels, width, height, coords, _options.GrayCalculator, _options.UseAveragePixel);
 
             // 格点与相邻的8个格点的灰度差异 double[9 * 9 * 8]
             double[] brightnessDifferences = ComputeNeighbourDifferences(squareAverages, _options.GridPointNum);
@@ -108,13 +147,15 @@ namespace ImageMatchNet
         /// <summary>
         /// 计算以每个网格点为中心的P×P方块的灰度平均值
         /// </summary>
-        /// <param name="image">图片</param>
+        /// <param name="pixels">图片像素</param>
+        /// <param name="width">图片宽度</param>
+        /// <param name="height">图片高度</param>
         /// <param name="gridPoints">格点坐标</param>
         /// <param name="grayCalculator">灰度计算公式</param>
         /// <param name="useAveragePixel">是否使用9宫格的平均值代替像素本身的值</param>
         /// <returns></returns>
         private double[] ComputeAverageBrightness(
-            Image<Rgba32> image,
+            ReadOnlySpan<Rgba32> pixels, int width, int height,
             Point[] gridPoints,
             GrayComputeExpression grayCalculator,
             bool useAveragePixel = false)
@@ -123,14 +164,8 @@ namespace ImageMatchNet
             var squareSize = (int)Math.Max
             (
                 2.0,
-                Math.Round(Math.Min(image.Width, image.Height) / 20.0)
+                Math.Round(Math.Min(width, height) / 20.0)
             );
-
-            // 获取图片像素数组
-            if (!image.TryGetSinglePixelSpan(out Span<Rgba32> pixels))
-            {
-                throw new InvalidOperationException("The backing buffer for the image was not contiguous.");
-            }
 
             // 格点平均灰度数组
             double[] averageBrightness = new double[gridPoints.Length];
@@ -141,8 +176,8 @@ namespace ImageMatchNet
                 averageBrightness[i] = ComputeSquareAverage
                 (
                     pixels,
-                    image.Width,
-                    image.Height,
+                    width,
+                    height,
                     point,
                     squareSize,
                     grayCalculator,
