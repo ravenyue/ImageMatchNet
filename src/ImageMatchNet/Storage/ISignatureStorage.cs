@@ -8,16 +8,12 @@ namespace ImageMatchNet.Storage
 {
     public interface ISignatureStorage
     {
-        int[] AddImage(string key, string filePath, Dictionary<string, string> metadata = null);
-        int[] AddImage(string key, Stream stream, Dictionary<string, string> metadata = null);
-        Task<int[]> AddImageAsync(string key, string filePath, Dictionary<string, string> metadata = null);
-        Task<int[]> AddImageAsync(string key, Stream stream, Dictionary<string, string> metadata = null);
-        List<MatchedRecord> SearchImage(int[] sign);
-        List<MatchedRecord> SearchImage(string filePath, bool allOrientations);
-        List<MatchedRecord> SearchImage(Stream stream, bool allOrientations);
-        Task<List<MatchedRecord>> SearchImageAsync(int[] sign);
-        Task<List<MatchedRecord>> SearchImageAsync(string filePath, bool allOrientations);
-        Task<List<MatchedRecord>> SearchImageAsync(Stream stream, bool allOrientations);
+        int[] AddOrUpdateImage<TMetadata>(string key, Stream stream, TMetadata metadata) where TMetadata : class;
+        Task<int[]> AddOrUpdateImageAsync<TMetadata>(string key, Stream stream, TMetadata metadata) where TMetadata : class;
+        List<MatchedRecord<TMetadata>> SearchImage<TMetadata>(int[] sign) where TMetadata : class;
+        List<MatchedRecord<TMetadata>> SearchImage<TMetadata>(Stream stream, bool allOrientations = true) where TMetadata : class;
+        Task<List<MatchedRecord<TMetadata>>> SearchImageAsync<TMetadata>(int[] sign) where TMetadata : class;
+        Task<List<MatchedRecord<TMetadata>>> SearchImageAsync<TMetadata>(Stream stream, bool allOrientations = true) where TMetadata : class;
         void DeleteImage(string key);
         Task DeleteImageAsync(string key);
     }

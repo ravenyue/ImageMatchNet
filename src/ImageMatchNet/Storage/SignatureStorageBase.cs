@@ -12,6 +12,8 @@ namespace ImageMatchNet.Storage
         public const int DefaultWordWidth = 16;
         public const int DefaultWordNumber = 63;
 
+        internal readonly static object EmptyMetadata = new object();
+
         private readonly int _wordWidth;
         private readonly int _wordNumber;
         protected readonly ImageSignature Generator;
@@ -31,79 +33,56 @@ namespace ImageMatchNet.Storage
             Generator = new ImageSignature(options);
         }
 
-        public abstract void InsertSignature(SignatureData data);
-        public abstract Task InsertSignatureAsync(SignatureData data);
+        public abstract void InsertOrUpdateSignature<TMetadata>(SignatureData<TMetadata> data) where TMetadata : class;
+        public abstract Task InsertOrUpdateSignatureAsync<TMetadata>(SignatureData<TMetadata> data) where TMetadata : class;
 
-        public abstract List<MatchedRecord> SearchSignature(SignatureData data);
-        public abstract Task<List<MatchedRecord>> SearchSignatureAsync(SignatureData data);
+        public abstract List<MatchedRecord<TMetadata>> SearchSignature<TMetadata>(SignatureData data) where TMetadata : class;
+        public abstract Task<List<MatchedRecord<TMetadata>>> SearchSignatureAsync<TMetadata>(SignatureData data) where TMetadata : class;
 
         public abstract void DeleteImage(string key);
         public abstract Task DeleteImageAsync(string key);
 
-        public int[] AddImage(string key, string filePath, Dictionary<string, string> metadata = null)
+        public int[] AddOrUpdateImage<TMetadata>(string key, Stream stream, TMetadata metadata)
+            where TMetadata : class
         {
             if (string.IsNullOrWhiteSpace(key)) throw new ArgumentNullException(nameof(key));
-            if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentNullException(nameof(filePath));
-
-            using (var image = File.OpenRead(filePath))
-            {
-                return AddImage(key, image, metadata);
-            }
-        }
-
-        public int[] AddImage(string key, Stream stream, Dictionary<string, string> metadata = null)
-        {
-            if (string.IsNullOrWhiteSpace(key)) throw new ArgumentNullException(nameof(key));
+            if (metadata is null) throw new ArgumentNullException(nameof(metadata));
 
             var signData = MakeSignatureData(key, stream, metadata);
-            InsertSignature(signData);
+            InsertOrUpdateSignature(signData);
             return signData.Signature;
         }
 
-        public async Task<int[]> AddImageAsync(string key, string filePath, Dictionary<string, string> metadata)
+        public async Task<int[]> AddOrUpdateImageAsync<TMetadata>(string key, Stream stream, TMetadata metadata)
+            where TMetadata : class
         {
             if (string.IsNullOrWhiteSpace(key)) throw new ArgumentNullException(nameof(key));
-            if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentNullException(nameof(filePath));
-
-            using (var image = File.OpenRead(filePath))
-            {
-                return await AddImageAsync(key, image, metadata);
-            }
-        }
-
-        public async Task<int[]> AddImageAsync(string key, Stream stream, Dictionary<string, string> metadata)
-        {
-            if (string.IsNullOrWhiteSpace(key)) throw new ArgumentNullException(nameof(key));
+            if (metadata is null) throw new ArgumentNullException(nameof(metadata));
 
             var signData = MakeSignatureData(key, stream, metadata);
-            await InsertSignatureAsync(signData);
+            await InsertOrUpdateSignatureAsync(signData);
 
             return signData.Signature;
         }
 
-        public List<MatchedRecord> SearchImage(int[] sign)
+        public List<MatchedRecord<TMetadata>> SearchImage<TMetadata>(int[] sign)
+            where TMetadata : class
         {
             var signData = MakeSignatureData(string.Empty, sign);
-            return SearchSignature(signData);
+            return SearchSignature<TMetadata>(signData);
         }
 
-        public Task<List<MatchedRecord>> SearchImageAsync(int[] sign)
+        public Task<List<MatchedRecord<TMetadata>>> SearchImageAsync<TMetadata>(int[] sign)
+            where TMetadata : class
         {
             var signData = MakeSignatureData(string.Empty, sign);
-            return SearchSignatureAsync(signData);
+            return SearchSignatureAsync<TMetadata>(signData);
         }
 
-        public List<MatchedRecord> SearchImage(string filePath, bool allOrientations)
+        public List<MatchedRecord<TMetadata>> SearchImage<TMetadata>(Stream stream, bool allOrientations = true)
+            where TMetadata : class
         {
-            using (var image = File.OpenRead(filePath))
-            {
-                return SearchImage(image, allOrientations);
-            }
-        }
-
-        public List<MatchedRecord> SearchImage(Stream stream, bool allOrientations)
-        {
-            var result = new List<MatchedRecord>();
+            var result = new List<MatchedRecord<TMetadata>>();
             if (allOrientations)
             {
                 var signs = Generator.GenerateAllOrientationsSignature(stream);
@@ -111,33 +90,27 @@ namespace ImageMatchNet.Storage
                 foreach (var sign in signs)
                 {
                     var signData = MakeSignatureData(string.Empty, sign);
-                    var records = SearchSignature(signData);
+                    var records = SearchSignature<TMetadata>(signData);
                     result.AddRange(records);
                 }
             }
             else
             {
                 var signData = MakeSignatureData(string.Empty, stream);
-                result = SearchSignature(signData);
+                result = SearchSignature<TMetadata>(signData);
             }
 
+            IEqualityComparer<MatchedRecord<TMetadata>> comparer = new MatchedRecordEqualityComparer();
             return result
                 .Where(x => x.Dist < SignatureComparison.DefaultMatchThreshold)
-                .Distinct(new MatchedRecordEqualityComparer())
+                .Distinct(comparer)
                 .ToList();
         }
 
-        public async Task<List<MatchedRecord>> SearchImageAsync(string filePath, bool allOrientations)
+        public async Task<List<MatchedRecord<TMetadata>>> SearchImageAsync<TMetadata>(Stream stream, bool allOrientations = true)
+            where TMetadata : class
         {
-            using (var image = File.OpenRead(filePath))
-            {
-                return await SearchImageAsync(image, allOrientations);
-            }
-        }
-
-        public async Task<List<MatchedRecord>> SearchImageAsync(Stream stream, bool allOrientations)
-        {
-            var result = new List<MatchedRecord>();
+            var result = new List<MatchedRecord<TMetadata>>();
             if (allOrientations)
             {
                 var signs = Generator.GenerateAllOrientationsSignature(stream);
@@ -145,20 +118,19 @@ namespace ImageMatchNet.Storage
                 foreach (var sign in signs)
                 {
                     var signData = MakeSignatureData(string.Empty, sign);
-                    var records = await SearchSignatureAsync(signData);
+                    var records = await SearchSignatureAsync<TMetadata>(signData);
                     result.AddRange(records);
                 }
-
             }
             else
             {
                 var signData = MakeSignatureData(string.Empty, stream);
-                result = await SearchSignatureAsync(signData);
+                result = await SearchSignatureAsync<TMetadata>(signData);
             }
-
+            IEqualityComparer<MatchedRecord<TMetadata>> comparer = new MatchedRecordEqualityComparer();
             return result
                 .Where(x => x.Dist < SignatureComparison.DefaultMatchThreshold)
-                .Distinct(new MatchedRecordEqualityComparer())
+                .Distinct(comparer)
                 .ToList();
         }
 
@@ -174,17 +146,28 @@ namespace ImageMatchNet.Storage
             return dists;
         }
 
-        public SignatureData MakeSignatureData(string key, Stream stream, Dictionary<string, string> metadata = null)
+        public SignatureData MakeSignatureData(string key, int[] sign)
+        {
+            return MakeSignatureData(key, sign, EmptyMetadata);
+        }
+
+        public SignatureData MakeSignatureData(string key, Stream stream)
+        {
+            return MakeSignatureData(key, stream, EmptyMetadata);
+        }
+
+        public SignatureData<TMetadata> MakeSignatureData<TMetadata>(string key, Stream stream, TMetadata metadata = null)
+            where TMetadata : class
         {
             var sign = Generator.GenerateSignature(stream);
 
             return MakeSignatureData(key, sign, metadata);
-
         }
 
-        public SignatureData MakeSignatureData(string key, int[] sign, Dictionary<string, string> metadata = null)
+        public SignatureData<TMetadata> MakeSignatureData<TMetadata>(string key, int[] sign, TMetadata metadata)
+            where TMetadata : class
         {
-            var data = new SignatureData
+            var data = new SignatureData<TMetadata>
             {
                 Key = key,
                 Signature = sign,

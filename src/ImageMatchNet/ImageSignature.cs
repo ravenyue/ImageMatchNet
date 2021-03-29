@@ -61,7 +61,7 @@ namespace ImageMatchNet
             var image = Image.Load<Rgba32>(stream);
             
             var signs = new int[4][];
-            for (int i = 0; i <= 4; i++)
+            for (int i = 0; i < 4; i++)
             {
                 var degrees = i * 90;
                 image.Mutate(x => x.Rotate(degrees));
