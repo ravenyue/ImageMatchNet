@@ -59,7 +59,7 @@ namespace ImageMatchNet
         public int[][] GenerateAllOrientationsSignature(Stream stream)
         {
             var image = Image.Load<Rgba32>(stream);
-            
+
             var signs = new int[4][];
             for (int i = 0; i < 4; i++)
             {
@@ -98,16 +98,16 @@ namespace ImageMatchNet
             }
 
             // 计算格点坐标
-            Point[] coords = ComputeGridPoints(width, height, _options.GridPointNum);
+            Point[] coords = ComputeGridPoints(width, height);
 
             // 计算以每个网格点为中心的每个P×P方块的灰度平均值。 double[9 * 9=81] OKOK
-            double[] squareAverages = ComputeAverageBrightness(pixels, width, height, coords, _options.GrayCalculator, _options.UseAveragePixel);
+            double[] squareAverages = ComputeAverageBrightness(pixels, width, height, coords);
 
             // 格点与相邻的8个格点的灰度差异 double[9 * 9 * 8]
-            double[] brightnessDifferences = ComputeNeighbourDifferences(squareAverages, _options.GridPointNum);
+            double[] brightnessDifferences = ComputeNeighbourDifferences(squareAverages);
 
             // 生成最终的差异级别数组签名
-            return ComputeRelativeBrightnessLevels(brightnessDifferences, _options.IdenticalTolerance, _options.Level);
+            return ComputeRelativeBrightnessLevels(brightnessDifferences);
         }
 
         public double NormalizedDistance(ReadOnlySpan<int> left, ReadOnlySpan<int> right)
@@ -127,14 +127,10 @@ namespace ImageMatchNet
         /// <param name="width">图片宽度</param>
         /// <param name="height">图片高度</param>
         /// <param name="gridPoints">格点坐标</param>
-        /// <param name="grayCalculator">灰度计算公式</param>
-        /// <param name="useAveragePixel">是否使用9宫格的平均值代替像素本身的值</param>
         /// <returns></returns>
         private double[] ComputeAverageBrightness(
             ReadOnlySpan<Rgba32> pixels, int width, int height,
-            Point[] gridPoints,
-            GrayComputeExpression grayCalculator,
-            bool useAveragePixel = false)
+            Point[] gridPoints)
         {
             // 正方形大小
             var squareSize = (int)Math.Max
@@ -155,9 +151,7 @@ namespace ImageMatchNet
                     width,
                     height,
                     point,
-                    squareSize,
-                    grayCalculator,
-                    useAveragePixel
+                    squareSize
                 );
             }
 
@@ -171,8 +165,9 @@ namespace ImageMatchNet
         /// <param name="height">图片高</param>
         /// <param name="gridPointNum">格点数</param>
         /// <returns></returns>
-        private Point[] ComputeGridPoints(int width, int height, int gridPointNum)
+        private Point[] ComputeGridPoints(int width, int height)
         {
+            var gridPointNum = _options.GridPointNum;
             var coords = new Point[gridPointNum * gridPointNum];
             // 行偏移
             double xOffset = height / (gridPointNum + 1.0);
@@ -215,9 +210,7 @@ namespace ImageMatchNet
             int imageWidth,
             int imageHeight,
             Point squareCenter,
-            int squareSize,
-            GrayComputeExpression grayCalculator,
-            bool useAveragePixel = false
+            int squareSize
         )
         {
             // 正方形左上角坐标
@@ -240,7 +233,7 @@ namespace ImageMatchNet
                         continue;
                     }
                     // 累加像素灰度值
-                    sum += GetPixelGray(pixels, imageWidth, imageHeight, x, y, grayCalculator, useAveragePixel);
+                    sum += GetPixelGray(pixels, imageWidth, imageHeight, x, y);
                 }
             }
             // 返回平均值
@@ -260,17 +253,15 @@ namespace ImageMatchNet
         /// <returns></returns>
         private double GetPixelGray(ReadOnlySpan<Rgba32> pixels,
             int imageWidth, int imageHeight,
-            int xCoord, int yCoord,
-            GrayComputeExpression grayCalculator,
-            bool useAveragePixel = false)
+            int xCoord, int yCoord)
         {
             // 使用像素本身的值
-            if (!useAveragePixel)
+            if (!_options.UseAveragePixel)
             {
                 int idx = (xCoord * imageWidth) + yCoord;
                 Rgba32 pixel = pixels[idx];
 
-                double gray = grayCalculator(pixel.R, pixel.G, pixel.B, pixel.A);
+                double gray = _options.GrayCalculator(pixel.R, pixel.G, pixel.B, pixel.A);
                 return gray;
             }
 
@@ -298,7 +289,7 @@ namespace ImageMatchNet
                     int spanIndex = y + (x * imageWidth);
                     Rgba32 pixel = pixels[spanIndex];
 
-                    double gray = grayCalculator(pixel.R, pixel.G, pixel.B, pixel.A);
+                    double gray = _options.GrayCalculator(pixel.R, pixel.G, pixel.B, pixel.A);
                     sum += gray;
                 }
             }
@@ -312,8 +303,9 @@ namespace ImageMatchNet
         /// <param name="brightnessAverages"></param>
         /// <param name="gridPointNum"></param>
         /// <returns></returns>
-        private double[] ComputeNeighbourDifferences(ReadOnlySpan<double> brightnessAverages, int gridPointNum)
+        private double[] ComputeNeighbourDifferences(ReadOnlySpan<double> brightnessAverages)
         {
+            var gridPointNum = _options.GridPointNum;
             double[] neighbourDifferences = new double[gridPointNum * gridPointNum * _neighbourCoordinateMap.Count];
             int spanIndex = 0;
 
@@ -353,13 +345,10 @@ namespace ImageMatchNet
             return neighbourDifferences;
         }
 
-        private int[] ComputeRelativeBrightnessLevels
-        (
-            ReadOnlySpan<double> neighbourDifferences,
-            double identicalTolerance,
-            int level
-        )
+        private int[] ComputeRelativeBrightnessLevels(ReadOnlySpan<double> neighbourDifferences)
         {
+            var identicalTolerance = _options.IdenticalTolerance;
+            var level = _options.Level;
             var darks = new List<double>();
             var lights = new List<double>();
 
