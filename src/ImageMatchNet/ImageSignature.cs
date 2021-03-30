@@ -60,6 +60,11 @@ namespace ImageMatchNet
         {
             var image = Image.Load<Rgba32>(stream);
 
+            if (_options.AutoEntropyCrop)
+            {
+                image.Mutate(o => o.EntropyCrop());
+            }
+
             var signs = new int[4][];
             for (int i = 0; i < 4; i++)
             {
@@ -79,8 +84,10 @@ namespace ImageMatchNet
 
         private int[] InternalGenerateSignature(Image<Rgba32> image)
         {
-            // 裁剪图片
-            // image.Mutate(o => o.EntropyCrop());
+            if (_options.AutoEntropyCrop)
+            {
+                image.Mutate(o => o.EntropyCrop());
+            }
 
             if (!image.TryGetSinglePixelSpan(out Span<Rgba32> pixels))
             {

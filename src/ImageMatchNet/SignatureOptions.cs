@@ -9,7 +9,7 @@ namespace ImageMatchNet
         public SignatureOptions()
         {
             GridPointNum = 9;
-            CropPercentiles = (5, 95);
+            AutoEntropyCrop = true;
             IdenticalTolerance = 2.0 / 255;
             Level = 2;
             UseAveragePixel = false;
@@ -42,9 +42,9 @@ namespace ImageMatchNet
         public int GridPointNum { get; set; }
 
         /// <summary>
-        /// 裁剪百分比。默认(5,95)，即在5%~95%处裁剪图片
+        /// 自动裁剪图片
         /// </summary>
-        public (int, int) CropPercentiles { get; set; }
+        public bool AutoEntropyCrop { get; set; }
 
         /// <summary>
         /// 声明两个相邻网格点相同的边界值。默认2.0/255
