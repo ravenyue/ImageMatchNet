@@ -32,6 +32,13 @@ namespace ImageMatchNet.Elasticsearch
             _index = index;
         }
 
+        public ElasticsearchSignatureStorage(EsStorageOptions options)
+            : base(options.WordWidth, options.WordNumber, options.SignatureOptions)
+        {
+            _client = options.Client;
+            _index = options.Index;
+        }
+
         public override void InsertOrUpdateSignature<TMetadata>(SignatureData<TMetadata> data)
         {
             var id = GetDocumentIdByKey(data.Key);

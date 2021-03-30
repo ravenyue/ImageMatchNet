@@ -11,7 +11,7 @@ namespace ImageMatchNet
 {
     public class ImageSignature
     {
-        private static IReadOnlyList<Point> _neighbourCoordinateMap = new[]
+        private static readonly IReadOnlyList<Point> _neighbourCoordinateMap = new[]
         {
             new Point { X = -1, Y = -1 },
             new Point { X = -1, Y = 0, },
@@ -118,30 +118,6 @@ namespace ImageMatchNet
         public bool IsMatch(ReadOnlySpan<int> left, ReadOnlySpan<int> right)
         {
             return SignatureComparison.IsMatch(left, right);
-        }
-
-        /// <summary>
-        /// 获取图片像素的灰度数组
-        /// </summary>
-        /// <param name="image"></param>
-        /// <returns></returns>
-        public double[] GetPixelsGray(Image<Rgba32> image)
-        {
-            // 获取图片像素数组
-            if (!image.TryGetSinglePixelSpan(out Span<Rgba32> pixels))
-            {
-                throw new InvalidOperationException("The backing buffer for the image was not contiguous.");
-            }
-
-            double[] grayArray = new double[pixels.Length];
-
-            for (int i = 0; i < pixels.Length; i++)
-            {
-                var pixel = pixels[i];
-                // 根据RGBA计算灰度
-                grayArray[i] = _options.GrayCalculator(pixel.R, pixel.G, pixel.B, pixel.A);
-            }
-            return grayArray;
         }
 
         /// <summary>
