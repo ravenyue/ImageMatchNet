@@ -6,12 +6,30 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ImageMatchNet.Elasticsearch\ImageMatchNet.Elasticsearch.csproj" />
-    <ProjectReference Include="..\..\src\ImageMatchNet\ImageMatchNet.csproj" />
+    <None Remove="images\1.jpg" />
+    <None Remove="images\2.jpg" />
+    <None Remove="images\3.jpg" />
+    <None Remove="images\4.png" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="images\" />
+    <Content Include="images\1.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="images\2.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="images\3.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="images\4.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ImageMatchNet.Elasticsearch\ImageMatchNet.Elasticsearch.csproj" />
+    <ProjectReference Include="..\..\src\ImageMatchNet\ImageMatchNet.csproj" />
   </ItemGroup>
 
 </Project>

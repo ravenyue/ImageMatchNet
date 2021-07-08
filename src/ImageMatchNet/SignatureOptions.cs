@@ -9,7 +9,7 @@ namespace ImageMatchNet
         public SignatureOptions()
         {
             GridPointNum = 9;
-            AutoEntropyCrop = true;
+            CropPercentiles = (0, 100);
             IdenticalTolerance = 2.0 / 255;
             Level = 2;
             UseAveragePixel = false;
@@ -27,13 +27,13 @@ namespace ImageMatchNet
             {
                 int bgColur = 1;
                 double alpha = A / 255.0;
-                
+
                 double red = bgColur * (1 - alpha) + R * alpha;
                 double green = bgColur * (1 - alpha) + G * alpha;
                 double blue = bgColur * (1 - alpha) + B * alpha;
 
                 return 0.2125 * red + 0.7154 * green + 0.0721 * blue;
-            }  
+            }
         }
 
         /// <summary>
@@ -41,10 +41,7 @@ namespace ImageMatchNet
         /// </summary>
         public int GridPointNum { get; set; }
 
-        /// <summary>
-        /// 自动裁剪图片
-        /// </summary>
-        public bool AutoEntropyCrop { get; set; }
+        public (int lower, int upper) CropPercentiles { get; set; }
 
         /// <summary>
         /// 声明两个相邻网格点相同的边界值。默认2.0/255

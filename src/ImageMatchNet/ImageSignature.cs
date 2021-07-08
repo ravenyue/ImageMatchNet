@@ -60,10 +60,7 @@ namespace ImageMatchNet
         {
             var image = Image.Load<Rgba32>(stream);
 
-            if (_options.AutoEntropyCrop)
-            {
-                image.Mutate(o => o.EntropyCrop());
-            }
+            CropImage(image, _options.CropPercentiles.lower, _options.CropPercentiles.upper);
 
             var signs = new int[4][];
             for (int i = 0; i < 4; i++)
@@ -84,10 +81,7 @@ namespace ImageMatchNet
 
         private int[] InternalGenerateSignature(Image<Rgba32> image)
         {
-            if (_options.AutoEntropyCrop)
-            {
-                image.Mutate(o => o.EntropyCrop());
-            }
+            CropImage(image, _options.CropPercentiles.lower, _options.CropPercentiles.upper);
 
             if (!image.TryGetSinglePixelSpan(out Span<Rgba32> pixels))
             {
@@ -95,6 +89,30 @@ namespace ImageMatchNet
             }
 
             return Sign(pixels, image.Width, image.Height);
+        }
+
+        private Image<Rgba32> CropImage(Image<Rgba32> image, int lowerPercentile, int upperPercentile)
+        {
+            if (lowerPercentile == 0 &&
+                upperPercentile == 100)
+            {
+                return image;
+            }
+
+            var lowerRowLimit = (int)(lowerPercentile / 100.0 * image.Height);
+            var upperRowLimit = (int)(upperPercentile / 100.0 * image.Height);
+            var lowerColumnLimit = (int)(lowerPercentile / 100.0 * image.Width);
+            var upperColumnLimit = (int)(upperPercentile / 100.0 * image.Width);
+
+            var rectangle = new Rectangle(
+                lowerColumnLimit,
+                lowerRowLimit,
+                upperColumnLimit - lowerColumnLimit,
+                upperRowLimit - lowerRowLimit);
+
+            image.Mutate(o => o.Crop(rectangle));
+
+            return image;
         }
 
         private int[] Sign(ReadOnlySpan<Rgba32> pixels, int width, int height)
@@ -107,7 +125,7 @@ namespace ImageMatchNet
             // 计算格点坐标
             Point[] coords = ComputeGridPoints(width, height);
 
-            // 计算以每个网格点为中心的每个P×P方块的灰度平均值。 double[9 * 9=81] OKOK
+            // 计算以每个网格点为中心的每个P×P方块的灰度平均值。 double[9 * 9=81]
             double[] squareAverages = ComputeAverageBrightness(pixels, width, height, coords);
 
             // 格点与相邻的8个格点的灰度差异 double[9 * 9 * 8]

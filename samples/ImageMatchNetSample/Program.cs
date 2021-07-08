@@ -1,23 +1,61 @@
 using ImageMatchNet;
+using ImageMatchNet.Elasticsearch;
+using ImageMatchNet.Storage;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace ImageMatchNetSample
 {
-    class Program
+    public class Program
     {
         static void Main(string[] args)
         {
-            var path1 = @"E:\projects\ImageMatchNet\samples\ImageMatchNetSample\images\1.jpg";
-            var path2 = @"E:\projects\ImageMatchNet\samples\ImageMatchNetSample\images\2.jpg";
+            var path1 = Path.Combine(Directory.GetCurrentDirectory(), "images/1.jpg");
+            var path2 = Path.Combine(Directory.GetCurrentDirectory(), "images/2.jpg");
+            var path3 = Path.Combine(Directory.GetCurrentDirectory(), "images/3.jpg");
 
+            //var gis = new ImageSignature(new SignatureOptions { CropPercentiles = (5, 95) });
             var gis = new ImageSignature();
 
             var sign1 = gis.GenerateSignature(path1);
             var sign2 = gis.GenerateSignature(path2);
+            var sign3 = gis.GenerateSignature(path3);
 
-            var dist = gis.NormalizedDistance(sign1, sign2);
+            var dist1 = gis.NormalizedDistance(sign1, sign2);
+            var dist2 = gis.NormalizedDistance(sign1, sign3);
 
-            Console.WriteLine(dist);
+            Console.WriteLine($"1.jpg and 2.jpg distances: {dist1}");
+            Console.WriteLine($"1.jpg and 3.jpg distances: {dist2}");
+        }
+
+        static void PrintArray(int[] array)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                var val = array[i];
+                if (val < 0)
+                {
+                    Console.Write(val);
+                }
+                else
+                {
+                    Console.Write($" {val}");
+                }
+                if ((i + 1) % 24 == 0)
+                {
+                    Console.WriteLine("");
+                }
+                else
+                {
+                    Console.Write(" ");
+                }
+            }
         }
     }
 }
