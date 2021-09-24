@@ -19,6 +19,15 @@ namespace ImageMatchNet.Elasticsearch
 
         public ElasticsearchSignatureStorage(string esUri, string index = DefaultIndex)
         {
+            if (string.IsNullOrWhiteSpace(esUri))
+            {
+                throw new ArgumentNullException(nameof(esUri));
+            }
+            if (string.IsNullOrWhiteSpace(index))
+            {
+                throw new ArgumentNullException(nameof(index));
+            }
+
             var settings = new ConnectionSettings(new Uri(esUri));
             settings.DefaultIndex(index);
 
@@ -28,14 +37,28 @@ namespace ImageMatchNet.Elasticsearch
 
         public ElasticsearchSignatureStorage(ElasticClient client, string index = DefaultIndex)
         {
-            _client = client;
+            if (string.IsNullOrWhiteSpace(index))
+            {
+                throw new ArgumentNullException(nameof(index));
+            }
+            _client = client ?? throw new ArgumentNullException(nameof(client));
             _index = index;
         }
 
         public ElasticsearchSignatureStorage(EsStorageOptions options)
             : base(options.WordWidth, options.WordNumber, options.SignatureOptions)
         {
-            _client = options.Client;
+            if (options.Client == null)
+            {
+                var settings = new ConnectionSettings(new Uri(options.Uri));
+                settings.DefaultIndex(options.Index);
+                _client = new ElasticClient(settings);
+            }
+            else
+            {
+                _client = options.Client;
+            }
+
             _index = options.Index;
         }
 

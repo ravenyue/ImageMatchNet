@@ -15,10 +15,6 @@ namespace ImageMatchNet.Elasticsearch
             WordWidth = SignatureStorageBase.DefaultWordWidth;
             WordNumber = SignatureStorageBase.DefaultWordNumber;
             SignatureOptions = new SignatureOptions();
-
-            var settings = new ConnectionSettings(new Uri(Uri));
-            settings.DefaultIndex(Index);
-            Client = new ElasticClient(settings);
         }
 
         public string Uri { get; set; }
