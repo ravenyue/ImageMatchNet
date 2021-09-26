@@ -29,7 +29,7 @@ namespace ImageMatchNet.Storage
 
             using (var image = File.OpenRead(filePath))
             {
-                return await storage.AddOrUpdateImageAsync(key, image, SignatureStorageBase.EmptyMetadata);
+                return await storage.AddOrUpdateImageAsync(key, image, SignatureStorageBase.EmptyMetadata).ConfigureAwait(false);
             }
         }
 
@@ -67,7 +67,7 @@ namespace ImageMatchNet.Storage
 
             using (var image = File.OpenRead(filePath))
             {
-                return await storage.AddOrUpdateImageAsync(key, image, metadata);
+                return await storage.AddOrUpdateImageAsync(key, image, metadata).ConfigureAwait(false);
             }
         }
 
@@ -87,7 +87,7 @@ namespace ImageMatchNet.Storage
         {
             using (var image = File.OpenRead(filePath))
             {
-                return await storage.SearchImageAsync<TMetadata>(image, allOrientations);
+                return await storage.SearchImageAsync<TMetadata>(image, allOrientations).ConfigureAwait(false);
             }
         }
 
@@ -117,7 +117,7 @@ namespace ImageMatchNet.Storage
         public async static Task<List<MatchedRecord>> SearchImageAsync(
             this ISignatureStorage storage, int[] sign)
         {
-            var records = await storage.SearchImageAsync<object>(sign);
+            var records = await storage.SearchImageAsync<object>(sign).ConfigureAwait(false);
             return records.Select(x => (MatchedRecord)x).ToList();
         }
 
@@ -126,14 +126,14 @@ namespace ImageMatchNet.Storage
         {
             using (var image = File.OpenRead(filePath))
             {
-                return await storage.SearchImageAsync(image, allOrientations);
+                return await storage.SearchImageAsync(image, allOrientations).ConfigureAwait(false);
             }
         }
 
         public async static Task<List<MatchedRecord>> SearchImageAsync(
             this ISignatureStorage storage, Stream stream, bool allOrientations = true)
         {
-            var records = await storage.SearchImageAsync<object>(stream, allOrientations);
+            var records = await storage.SearchImageAsync<object>(stream, allOrientations).ConfigureAwait(false);
             return records.Select(x => (MatchedRecord)x).ToList();
         }
     }

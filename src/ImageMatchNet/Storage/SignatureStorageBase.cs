@@ -60,7 +60,7 @@ namespace ImageMatchNet.Storage
             if (metadata is null) throw new ArgumentNullException(nameof(metadata));
 
             var signData = MakeSignatureData(key, stream, metadata);
-            await InsertOrUpdateSignatureAsync(signData);
+            await InsertOrUpdateSignatureAsync(signData).ConfigureAwait(false);
 
             return signData.Signature;
         }
@@ -118,14 +118,14 @@ namespace ImageMatchNet.Storage
                 foreach (var sign in signs)
                 {
                     var signData = MakeSignatureData(string.Empty, sign);
-                    var records = await SearchSignatureAsync<TMetadata>(signData);
+                    var records = await SearchSignatureAsync<TMetadata>(signData).ConfigureAwait(false);
                     result.AddRange(records);
                 }
             }
             else
             {
                 var signData = MakeSignatureData(string.Empty, stream);
-                result = await SearchSignatureAsync<TMetadata>(signData);
+                result = await SearchSignatureAsync<TMetadata>(signData).ConfigureAwait(false);
             }
             IEqualityComparer<MatchedRecord<TMetadata>> comparer = new MatchedRecordEqualityComparer();
             return result

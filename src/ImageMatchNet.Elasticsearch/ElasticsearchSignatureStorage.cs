@@ -78,15 +78,15 @@ namespace ImageMatchNet.Elasticsearch
 
         public override async Task InsertOrUpdateSignatureAsync<TMetadata>(SignatureData<TMetadata> data)
         {
-            var id = await GetDocumentIdByKeyAsync(data.Key);
+            var id = await GetDocumentIdByKeyAsync(data.Key).ConfigureAwait(false);
 
             if (string.IsNullOrWhiteSpace(id))
             {
-                await _client.IndexAsync(data, idx => idx.Index(_index));
+                await _client.IndexAsync(data, idx => idx.Index(_index)).ConfigureAwait(false);
             }
             else
             {
-                await _client.IndexAsync(data, idx => idx.Index(_index).Id(id));
+                await _client.IndexAsync(data, idx => idx.Index(_index).Id(id)).ConfigureAwait(false);
             }
         }
 
@@ -117,7 +117,7 @@ namespace ImageMatchNet.Elasticsearch
 
             //var json = _client.SourceSerializer.SerializeToString(request);
 
-            var res = await _client.SearchAsync<SignatureData<TMetadata>>(request);
+            var res = await _client.SearchAsync<SignatureData<TMetadata>>(request).ConfigureAwait(false);
 
             return BuildMatchedRecords(data.Signature, res);
         }
@@ -169,7 +169,7 @@ namespace ImageMatchNet.Elasticsearch
                         .Query(key)
                     )
                 )
-            );
+            ).ConfigureAwait(false);
 
             return res.Hits.Select(x => x.Id).FirstOrDefault();
         }
