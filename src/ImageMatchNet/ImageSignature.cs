@@ -93,6 +93,19 @@ namespace ImageMatchNet
 
         private Image<Rgba32> CropImage(Image<Rgba32> image, int lowerPercentile, int upperPercentile)
         {
+            if (lowerPercentile < 0 || lowerPercentile > 100)
+            {
+                throw new ArgumentOutOfRangeException(nameof(lowerPercentile), $"{nameof(lowerPercentile)} must be between 0 and 100");
+            }
+            if (upperPercentile < 0 || upperPercentile > 100)
+            {
+                throw new ArgumentOutOfRangeException(nameof(lowerPercentile), $"{nameof(upperPercentile)} must be between 0 and 100");
+            }
+            if (lowerPercentile >= upperPercentile)
+            {
+                throw new ArgumentException($"{nameof(lowerPercentile)} must be less than {nameof(upperPercentile)}");
+            }
+
             if (lowerPercentile == 0 &&
                 upperPercentile == 100)
             {

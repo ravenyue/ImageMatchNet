@@ -21,8 +21,14 @@ namespace ImageMatchNet.Elasticsearch
 
         public string Index { get; set; }
 
+        /// <summary>
+        /// The width of a word (default 16)
+        /// </summary>
         public int WordWidth { get; set; }
 
+        /// <summary>
+        /// The number of words (default 63)
+        /// </summary>
         public int WordNumber { get; set; }
 
         public ElasticClient Client { get; set; }

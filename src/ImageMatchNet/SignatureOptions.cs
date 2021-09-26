@@ -18,7 +18,6 @@ namespace ImageMatchNet
 
         public static double DefaultGrayExpression(byte R, byte G, byte B, byte A)
         {
-            // 不带透明通道
             if (A == 255)
             {
                 return (0.2125 * R + 0.7154 * G + 0.0721 * B) / 255;
@@ -37,40 +36,43 @@ namespace ImageMatchNet
         }
 
         /// <summary>
-        /// 图像上的网格点数量n x n。默认9x9网格点
+        /// number of grid imposed on image. Grid is n x n (default 9)
         /// </summary>
         public int GridPointNum { get; set; }
 
+        /// <summary>
+        /// lower and upper bounds when considering how much variance to keep in the image (default (0, 100))
+        /// </summary>
         public (int lower, int upper) CropPercentiles { get; set; }
 
         /// <summary>
-        /// 声明两个相邻网格点相同的边界值。默认2.0/255
+        /// cutoff difference for declaring two adjacent grid points identical (default 2/255)
         /// </summary>
         public double IdenticalTolerance { get; set; }
 
         /// <summary>
-        /// 将相邻差异分层到的正、负组数。Levels=2->[-2，-1，0，1，2]（默认值为2）
+        /// number of positive and negative groups to stratify neighbor differences into. n = 2 -> [-2, -1, 0, 1, 2] (default 2)
         /// </summary>
         public int Level { get; set; }
 
         /// <summary>
-        /// 使用以该像素为中心的3×3块的平均值替代像素的灰度级别本身
+        /// Use the average of the 3×3 blocks centered on the pixel to replace the gray level of the pixel itself (default false)
         /// </summary>
         public bool UseAveragePixel { get; set; }
 
         /// <summary>
-        /// 像素灰度计算公式
+        /// Pixel gray calculation expression
         /// </summary>
         public GrayComputeExpression GrayCalculator { get; set; }
     }
 
     /// <summary>
-    /// 像素灰度计算公式
+    /// Pixel gray calculation expression
     /// </summary>
-    /// <param name="R">像素R值(0-255)</param>
-    /// <param name="G">像素G值(0-255)</param>
-    /// <param name="B">像素B值(0-255)</param>
-    /// <param name="A">像素透明通道Alpha值(0-255)</param>
+    /// <param name="R">R(0-255)</param>
+    /// <param name="G">G(0-255)</param>
+    /// <param name="B">B(0-255)</param>
+    /// <param name="A">Alpha(0-255)</param>
     /// <returns></returns>
     public delegate double GrayComputeExpression(byte R, byte G, byte B, byte A);
 }
