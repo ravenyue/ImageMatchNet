@@ -13,9 +13,13 @@ namespace ImageMatchNet.Elasticsearch
 	public class ElasticsearchSignatureStorage : SignatureStorageBase
 	{
 		public const string DefaultIndex = "images";
+		public const int DefaultSize = 100;
+		public const Refresh DefaultRefresh = Refresh.False;
 
 		private readonly ElasticClient _client;
 		private readonly string _index;
+		private readonly int _size;
+		private readonly Refresh _refresh;
 
 		public ElasticsearchSignatureStorage(string esUri, string index = DefaultIndex)
 		{
@@ -33,6 +37,8 @@ namespace ImageMatchNet.Elasticsearch
 
 			_client = new ElasticClient(settings);
 			_index = index;
+			_size = DefaultSize;
+			_refresh = DefaultRefresh;
 		}
 
 		public ElasticsearchSignatureStorage(ElasticClient client, string index = DefaultIndex)
@@ -43,6 +49,8 @@ namespace ImageMatchNet.Elasticsearch
 			}
 			_client = client ?? throw new ArgumentNullException(nameof(client));
 			_index = index;
+			_size = DefaultSize;
+			_refresh = DefaultRefresh;
 		}
 
 		public ElasticsearchSignatureStorage(EsStorageOptions options)
@@ -60,6 +68,8 @@ namespace ImageMatchNet.Elasticsearch
 			}
 
 			_index = options.Index;
+			_size = options.Size;
+			_refresh = options.Refresh;
 		}
 
 		public override void InsertOrUpdateSignature<TMetadata>(SignatureData<TMetadata> data)
@@ -68,11 +78,11 @@ namespace ImageMatchNet.Elasticsearch
 
 			if (string.IsNullOrWhiteSpace(id))
 			{
-				_client.Index(data, idx => idx.Index(_index));
+				_client.Index(data, idx => idx.Index(_index).Refresh(_refresh));
 			}
 			else
 			{
-				_client.Index(data, idx => idx.Index(_index).Id(id));
+				_client.Index(data, idx => idx.Index(_index).Id(id).Refresh(_refresh));
 			}
 		}
 
@@ -82,11 +92,13 @@ namespace ImageMatchNet.Elasticsearch
 
 			if (string.IsNullOrWhiteSpace(id))
 			{
-				await _client.IndexAsync(data, idx => idx.Index(_index)).ConfigureAwait(false);
+				await _client.IndexAsync(data, idx => idx.Index(_index).Refresh(_refresh))
+					.ConfigureAwait(false);
 			}
 			else
 			{
-				await _client.IndexAsync(data, idx => idx.Index(_index).Id(id)).ConfigureAwait(false);
+				await _client.IndexAsync(data, idx => idx.Index(_index).Id(id).Refresh(_refresh))
+					.ConfigureAwait(false);
 			}
 		}
 
@@ -95,7 +107,7 @@ namespace ImageMatchNet.Elasticsearch
 			var request = new SearchRequest(_index)
 			{
 				From = 0,
-				Size = 10,
+				Size = _size,
 				Query = MakeTermQuerys(data)
 			};
 			var res = _client.Search<SignatureData<TMetadata>>(request);
@@ -108,7 +120,7 @@ namespace ImageMatchNet.Elasticsearch
 			var request = new SearchRequest(_index)
 			{
 				From = 0,
-				Size = 10,
+				Size = _size,
 				Query = MakeTermQuerys(data)
 			};
 			var res = await _client.SearchAsync<SignatureData<TMetadata>>(request).ConfigureAwait(false);
