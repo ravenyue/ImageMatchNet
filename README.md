@@ -30,6 +30,6 @@ Example
 ```csharp
 ISignatureStorage storage = new ElasticsearchSignatureStorage("http://localhost:9200");
 
-storage.AddOrUpdateImage("iamge1", "filePath");
+storage.AddOrUpdateImage("image1", "filePath");
 var matchs = storage.SearchImage("filePath");
 ```
